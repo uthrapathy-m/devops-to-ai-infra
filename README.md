@@ -34,7 +34,7 @@ There are three AI lanes open to a DevOps engineer:
 | 5 | 19–22 | RAG, evals and security | A RAG assistant with evals in CI and a threat model |
 | 6 | 23–26 | Platform polish and job market | GitOps for models, GPU FinOps, portfolio, interviews |
 
-Each phase in the [full roadmap](https://uthrapathy-m.github.io/devops-to-ai-infra/) has a week-by-week table, architecture diagrams, working config and a "done when" checklist. It also covers:
+Each phase in the [full roadmap](https://uthrapathy-m.github.io/devops-to-ai-infra/) has a week-by-week table, architecture diagrams and a "done when" checklist. Starter code lives separately in [`examples/`](examples/). It also covers:
 
 - GPU memory sizing and cost per 1M tokens, with the formulas
 - How to build in public: a post plan with one measured result per post

@@ -370,6 +370,10 @@ footer.end { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--li
       </tbody>
     </table>
   </div>
+  <div class="callout">
+    <span class="label">Where the code lives</span>
+    <p>This page is the roadmap only. Starter scripts and configs for each phase are in the <a href="https://github.com/uthrapathy-m/devops-to-ai-infra/tree/main/examples" target="_blank" rel="noopener">examples folder on GitHub</a>.</p>
+  </div>
   <div class="callout key">
     <span class="label">The core idea</span>
     <p>Most DevOps engineers learning AI collect course certificates. You will collect <strong>numbers</strong>: cost per million tokens, time to first token, GPU utilization, and money saved for your company. Hiring managers remember numbers, and they're difficult to fake.</p>
@@ -468,53 +472,12 @@ footer.end { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--li
     <table class="tbl-min">
       <thead><tr><th>Week</th><th>Learn</th><th>Build</th><th>Output</th></tr></thead>
       <tbody>
-        <tr><td class="wk">W1</td><td>Types, functions, dicts and lists, files, <code>venv</code>, <code>pip</code>, <code>subprocess</code>, JSON</td><td>Pod restart reporter (below)</td><td>First repo: <code>ops-python</code></td></tr>
+        <tr><td class="wk">W1</td><td>Types, functions, dicts and lists, files, <code>venv</code>, <code>pip</code>, <code>subprocess</code>, JSON</td><td>A script that lists pods that restart often</td><td>First repo: <code>ops-python</code></td></tr>
         <tr><td class="wk">W2</td><td><code>argparse</code>, <code>httpx</code>, <code>boto3</code>, exceptions, logging, <code>pytest</code></td><td>CLI that lists EC2 spend by tag using Cost Explorer</td><td>Tests passing in GitHub Actions</td></tr>
         <tr><td class="wk">W3</td><td>FastAPI, Pydantic, Docker multi-stage builds, the OpenAI-compatible API format</td><td>Log summarizer API that calls an LLM, deployed to kind</td><td>Container image plus Helm chart</td></tr>
         <tr><td class="wk">W4</td><td>Tokens, context window, temperature, embeddings, KV cache, quantization, inference vs. training</td><td>VRAM calculator script using the formula in section 03</td><td><strong>Post #1:</strong> "How much GPU does a 7B model need?"</td></tr>
       </tbody>
     </table>
-  </div>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">Python</span>restarts.py · week 1</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-python">import json
-import subprocess
-
-out = subprocess.run(
-    ["kubectl", "get", "pods", "-A", "-o", "json"],
-    capture_output=True, text=True, check=True,
-).stdout
-
-for pod in json.loads(out)["items"]:
-    for cs in pod["status"].get("containerStatuses", []):
-        if cs["restartCount"] > 3:
-            ns, name = pod["metadata"]["namespace"], pod["metadata"]["name"]
-            print(f"{ns}/{name}  container={cs['name']}  restarts={cs['restartCount']}")</code></pre>
-  </div>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">Python</span>app.py · week 3 log summarizer</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-python">from fastapi import FastAPI
-from openai import OpenAI
-from pydantic import BaseModel
-
-app = FastAPI()
-client = OpenAI()  # in Phase 3, point base_url at your own LLM gateway
-
-
-class Logs(BaseModel):
-    text: str
-
-
-@app.post("/summarize")
-def summarize(logs: Logs):
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are an SRE. List the errors and the likely root cause in 5 bullets."},
-            {"role": "user", "content": logs.text[-12000:]},  # keep the newest lines; tokens cost money
-        ],
-    )
-    return {"summary": resp.choices[0].message.content, "tokens": resp.usage.total_tokens}</code></pre>
   </div>
   <div class="callout done">
     <span class="label">Phase 1 is done when</span>
@@ -568,45 +531,6 @@ def summarize(logs: Logs):
       </tbody>
     </table>
   </div>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">YAML</span>litellm-config.yaml</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-yaml">model_list:
-  - model_name: chat-default              # what apps ask for
-    litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
-  - model_name: chat-default              # same name = fallback / load-balance pool
-    litellm_params:
-      model: bedrock/&lt;model-id-enabled-in-your-account&gt;
-      aws_region_name: us-east-1
-  - model_name: chat-private              # added in Phase 4
-    litellm_params:
-      model: hosted_vllm/Qwen/Qwen2.5-7B-Instruct-AWQ
-      api_base: http://vllm-qwen.inference.svc:8000/v1
-
-router_settings:
-  routing_strategy: simple-shuffle
-  num_retries: 2
-
-litellm_settings:
-  success_callback: ["langfuse"]
-  failure_callback: ["langfuse"]
-
-general_settings:
-  master_key: os.environ/LITELLM_MASTER_KEY
-  database_url: os.environ/DATABASE_URL</code></pre>
-  </div>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">Bash</span>install and issue a team key</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-bash">helm install llm-gateway oci://ghcr.io/berriai/litellm-helm \
-  --namespace ai-gateway --create-namespace -f values.yaml
-
-# one key per team: budget in USD, reset every 30 days, 120 requests/min
-curl -s https://llm-gateway.internal/key/generate \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"team_id": "support-bot", "max_budget": 200, "budget_duration": "30d", "rpm_limit": 120}'</code></pre>
-  </div>
   <h3>One-page proposal template</h3>
   <div class="cols-2">
     <div class="card"><span class="tag" style="color:var(--muted)">Problem</span><p>"We call LLM APIs from N services with M separate keys. We can't see spend per team, keys are hard to rotate, and a provider outage takes features down."</p></div>
@@ -638,161 +562,8 @@ curl -s https://llm-gateway.internal/key/generate \
       </tbody>
     </table>
   </div>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">YAML</span>karpenter-gpu-nodepool.yaml</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-yaml">apiVersion: karpenter.sh/v1
-kind: NodePool
-metadata:
-  name: gpu
-spec:
-  template:
-    spec:
-      nodeClassRef:
-        group: karpenter.k8s.aws
-        kind: EC2NodeClass
-        name: gpu
-      requirements:
-        - key: karpenter.k8s.aws/instance-family
-          operator: In
-          values: ["g5", "g6"]          # A10G / L4, 24 GB each
-        - key: karpenter.k8s.aws/instance-size
-          operator: In
-          values: ["xlarge", "2xlarge"]
-        - key: karpenter.sh/capacity-type
-          operator: In
-          values: ["spot", "on-demand"]  # spot first; on-demand as fallback
-      taints:
-        - key: nvidia.com/gpu
-          effect: NoSchedule             # only GPU workloads land here
-  limits:
-    nvidia.com/gpu: 2                    # a hard cap on GPUs is a hard cap on spend
-  disruption:
-    consolidationPolicy: WhenEmptyOrUnderutilized
-    consolidateAfter: 5m</code></pre>
-  </div>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">YAML</span>vllm-deployment.yaml</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-yaml">apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: vllm-qwen
-  namespace: inference
-spec:
-  replicas: 1
-  selector:
-    matchLabels: { app: vllm-qwen }
-  template:
-    metadata:
-      labels: { app: vllm-qwen }
-    spec:
-      nodeSelector:
-        karpenter.sh/nodepool: gpu
-      tolerations:
-        - key: nvidia.com/gpu
-          operator: Exists
-          effect: NoSchedule
-      containers:
-        - name: vllm
-          image: vllm/vllm-openai:v0.6.3      # pin the tag you tested
-          args:
-            - --model=Qwen/Qwen2.5-7B-Instruct-AWQ
-            - --max-model-len=8192
-            - --gpu-memory-utilization=0.90
-          ports:
-            - containerPort: 8000
-          resources:
-            requests: { cpu: "3", memory: 12Gi }
-            limits:   { memory: 13Gi, nvidia.com/gpu: 1 }
-          readinessProbe:
-            httpGet: { path: /health, port: 8000 }
-            initialDelaySeconds: 60
-            periodSeconds: 10
-          volumeMounts:
-            - { name: hf-cache, mountPath: /root/.cache/huggingface }
-            - { name: shm, mountPath: /dev/shm }
-      volumes:
-        - name: hf-cache
-          emptyDir: {}                       # upgrade: pre-load from S3 in an init container
-        - name: shm
-          emptyDir: { medium: Memory, sizeLimit: 2Gi }</code></pre>
-  </div>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">YAML</span>keda-scaledobject.yaml</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-yaml">apiVersion: keda.sh/v1alpha1
-kind: ScaledObject
-metadata:
-  name: vllm-qwen
-  namespace: inference
-spec:
-  scaleTargetRef:
-    name: vllm-qwen
-  minReplicaCount: 1
-  maxReplicaCount: 2
-  cooldownPeriod: 300
-  triggers:
-    - type: prometheus
-      metadata:
-        serverAddress: http://prometheus-server.monitoring:80
-        query: sum(vllm:num_requests_waiting{namespace="inference"})
-        threshold: "5"      # more than 5 queued requests per pod: add a pod</code></pre>
-  </div>
-  <h3>Benchmark it yourself</h3>
-  <p>This script also serves as Python practice: async code, streaming responses and percentiles. For rigorous numbers later, use vLLM's own benchmark tool or GuideLLM.</p>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">Python</span>bench.py</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-python">import asyncio, json, statistics, time
-import httpx
-
-URL = "http://localhost:8000/v1/chat/completions"   # kubectl port-forward svc/vllm-qwen 8000
-MODEL = "Qwen/Qwen2.5-7B-Instruct-AWQ"
-PROMPT = "Explain Kubernetes taints and tolerations in 150 words."
-
-
-async def one_request(client):
-    body = {"model": MODEL, "messages": [{"role": "user", "content": PROMPT}],
-            "max_tokens": 256, "stream": True}
-    start, ttft, tokens = time.perf_counter(), None, 0
-    async with client.stream("POST", URL, json=body) as resp:
-        async for line in resp.aiter_lines():
-            if not line.startswith("data: ") or line.endswith("[DONE]"):
-                continue
-            chunk = json.loads(line[6:])
-            if chunk["choices"] and chunk["choices"][0]["delta"].get("content"):
-                ttft = ttft or time.perf_counter() - start
-                tokens += 1                     # approx: one streamed chunk = one token
-    return ttft, tokens
-
-
-async def run(concurrency, total=64):
-    sem = asyncio.Semaphore(concurrency)
-    async with httpx.AsyncClient(timeout=180) as client:
-        async def guarded():
-            async with sem:
-                return await one_request(client)
-        t0 = time.perf_counter()
-        results = await asyncio.gather(*[guarded() for _ in range(total)])
-        wall = time.perf_counter() - t0
-    ttfts = sorted(r[0] for r in results if r[0])
-    tok_s = sum(r[1] for r in results) / wall
-    p95 = ttfts[int(0.95 * (len(ttfts) - 1))]
-    print(f"c={concurrency:>3}  {tok_s:7.1f} tok/s  TTFT p50={statistics.median(ttfts):.2f}s  p95={p95:.2f}s")
-
-
-for c in (1, 8, 32):
-    asyncio.run(run(c))</code></pre>
-  </div>
   <h3>Turn throughput into money</h3>
   <div class="formula">cost per 1M tokens = GPU price per hour ÷ (tokens per second × 3,600) × 1,000,000</div>
-  <div class="table-wrap">
-    <table class="tbl-min">
-      <thead><tr><th>Example (check current AWS pricing)</th><th class="num">$/hour</th><th class="num">Throughput</th><th class="num">$ per 1M tokens</th></tr></thead>
-      <tbody>
-        <tr><td>g5.xlarge on-demand, light load</td><td class="num">~1.01</td><td class="num">150 tok/s</td><td class="num">~1.87</td></tr>
-        <tr><td>g5.xlarge on-demand, batched at c=32</td><td class="num">~1.01</td><td class="num">1,000 tok/s</td><td class="num">~0.28</td></tr>
-        <tr><td>g5.xlarge spot, batched at c=32</td><td class="num">~0.40</td><td class="num">1,000 tok/s</td><td class="num">~0.11</td></tr>
-      </tbody>
-    </table>
-  </div>
   <div class="callout key">
     <span class="label">The insight to publish</span>
     <p>Self-hosting is only cheap when the GPU stays busy. At low traffic, a small hosted API model often costs less. Showing <em>where</em> the break-even point is, with your own measurements, is the kind of judgment senior engineers are hired for.</p>
@@ -907,25 +678,7 @@ for c in (1, 8, 32):
       </tbody>
     </table>
   </div>
-  <p>Set up a budget alarm before you start any GPU work. This is also your first piece of FinOps-as-code to show in interviews.</p>
-  <div class="code">
-    <div class="code-head"><span class="file"><span class="lang">HCL</span>budget.tf</span><button class="copy" type="button">Copy</button></div>
-<pre><code class="language-hcl">resource "aws_budgets_budget" "learning" {
-  name         = "ai-learning-monthly"
-  budget_type  = "COST"
-  limit_amount = "50"
-  limit_unit   = "USD"
-  time_unit    = "MONTHLY"
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = ["you@example.com"]
-  }
-}</code></pre>
-  </div>
+  <p>Set up an AWS Budgets alarm before you start any GPU work, so a forgotten node can't surprise you.</p>
 </section>
 
 <!-- 09 -->
