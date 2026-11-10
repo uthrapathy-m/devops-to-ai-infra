@@ -1,0 +1,1359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>DevOps to AI Infra</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Kalam:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+/* Layout: fixed left table of contents + a single reading column (~70ch) with full-width figures, tables and code. */
+:root, .light-tokens {
+  --paper: #FAF9F5;
+  --surface: #F1EFE7;
+  --raised: #FFFFFF;
+  --ink: #1F1E1D;
+  --ink-2: #3D3A33;
+  --muted: #6B675D;
+  --line: #E2DED3;
+  --clay: #C15F3C;
+  --clay-ink: #A3492A;
+  --clay-fill: #F6DFD4;
+  --sky: #3F6F99;
+  --sky-fill: #DCE7F2;
+  --sage: #4F7D56;
+  --sage-fill: #DDEADB;
+  --sand: #A57A1E;
+  --sand-fill: #F2E6C8;
+  --plain-fill: #FFFFFF;
+  --code-bg: #F3F1EA;
+}
+:root {
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --font-hand: "Kalam", "Segoe Print", "Comic Sans MS", cursive;
+  --sidebar: 272px;
+  --measure: 780px;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1C1B19; --surface: #252420; --raised: #2A2925; --ink: #ECE9E1; --ink-2: #D3CFC4;
+    --muted: #A39F94; --line: #3A3832; --clay: #E07B57; --clay-ink: #EE9575; --clay-fill: #4A2D22;
+    --sky: #8CB3D8; --sky-fill: #22303D; --sage: #92BE97; --sage-fill: #233428; --sand: #D9B35E;
+    --sand-fill: #3B3121; --plain-fill: #2A2925; --code-bg: #22211E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1C1B19; --surface: #252420; --raised: #2A2925; --ink: #ECE9E1; --ink-2: #D3CFC4;
+  --muted: #A39F94; --line: #3A3832; --clay: #E07B57; --clay-ink: #EE9575; --clay-fill: #4A2D22;
+  --sky: #8CB3D8; --sky-fill: #22303D; --sage: #92BE97; --sage-fill: #233428; --sand: #D9B35E;
+  --sand-fill: #3B3121; --plain-fill: #2A2925; --code-bg: #22211E; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--paper);
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+.light-tokens { display: none; }
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  position: fixed; top: 0; bottom: 0; left: 0; width: var(--sidebar);
+  padding: calc(28px + env(safe-area-inset-top, 0px)) 22px 24px max(22px, env(safe-area-inset-left, 0px));
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 22px;
+  z-index: 20;
+}
+.brand { display: flex; flex-direction: column; gap: 2px; }
+.brand .kicker { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--clay-ink); font-weight: 600; }
+.brand .name { font-family: var(--font-display); font-size: 22px; line-height: 1.2; color: var(--ink); font-weight: 600; }
+.toc { display: flex; flex-direction: column; gap: 18px; }
+.toc-group { display: flex; flex-direction: column; gap: 2px; }
+.toc-group h4 { margin: 0 0 4px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.toc a {
+  display: flex; gap: 8px; align-items: baseline;
+  padding: 5px 10px; margin-left: -10px; border-radius: 6px;
+  color: var(--ink-2); text-decoration: none; font-size: 14px; line-height: 1.35;
+}
+.toc a .n { font-family: var(--font-mono); font-size: 11px; color: var(--muted); min-width: 18px; }
+.toc a:hover { background: var(--line); }
+.toc a.active { background: var(--clay-fill); color: var(--clay-ink); font-weight: 600; }
+.toc a.active .n { color: var(--clay-ink); }
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: 600 14px/1 var(--font-body);
+  padding: 11px 14px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--clay); background: var(--clay); color: #fff;
+}
+.btn:hover { filter: brightness(1.06); }
+.btn:focus-visible, .toc a:focus-visible, .copy:focus-visible, .toc-toggle:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.btn svg { width: 16px; height: 16px; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.hint { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+.print-note {
+  border: 1px solid var(--line); background: var(--raised); border-radius: 8px;
+  padding: 12px 14px; font-size: 13px; line-height: 1.5; color: var(--ink-2);
+}
+.print-note code { font-size: 12px; word-break: break-all; }
+
+/* ---------- Mobile top bar ---------- */
+.topbar { display: none; }
+@media (max-width: 960px) {
+  .sidebar { transform: translateX(-102%); transition: transform .2s ease; width: min(86vw, 320px); box-shadow: 0 10px 40px rgba(0,0,0,.18); }
+  body.nav-open .sidebar { transform: none; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15;
+    padding-block: 10px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--paper); border-bottom: 1px solid var(--line);
+  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+  .topbar .t { font-family: var(--font-display); font-weight: 600; color: var(--ink); font-size: 17px; }
+  .toc-toggle { font: 600 13px var(--font-body); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--raised); color: var(--ink); cursor: pointer; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 18; }
+}
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none !important; } }
+
+/* ---------- Main column ---------- */
+main {
+  margin-left: var(--sidebar);
+  padding-block: 56px 96px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (max-width: 960px) { main { margin-left: 0; padding-block: 28px 72px; } }
+.wrap { max-width: var(--measure); margin: 0 auto; display: flex; flex-direction: column; gap: 0; min-width: 0; }
+
+header.doc { display: flex; flex-direction: column; gap: 18px; padding-bottom: 36px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--clay-ink); font-weight: 600; }
+h1 {
+  font-family: var(--font-display); font-weight: 600; color: var(--ink);
+  font-size: clamp(36px, 5.4vw, 54px); line-height: 1.05; margin: 0; letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.lede { font-size: 19px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: 64ch; }
+.meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--raised); }
+.meta div { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.meta div + div { border-left: 1px solid var(--line); }
+.meta dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.meta dd { margin: 0; font-family: var(--font-display); font-size: 21px; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meta div:nth-child(3) { border-left: 0; }
+  .meta div:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+
+section.s { padding-top: 56px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.s-head { display: flex; flex-direction: column; gap: 6px; }
+.s-num { font-family: var(--font-mono); font-size: 12px; color: var(--clay-ink); letter-spacing: .06em; }
+h2 { font-family: var(--font-display); font-weight: 600; color: var(--ink); font-size: 32px; line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h3 { font-family: var(--font-body); font-weight: 700; color: var(--ink); font-size: 18px; line-height: 1.35; margin: 14px 0 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.s ul, .s ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; max-width: 68ch; }
+strong { color: var(--ink); font-weight: 600; }
+a { color: var(--clay-ink); text-underline-offset: 3px; }
+:not(pre) > code { font-family: var(--font-mono); font-size: .86em; background: var(--code-bg); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; color: var(--ink); }
+
+/* Phase banner */
+.phase-tag { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.chip.clay { background: var(--clay-fill); border-color: transparent; color: var(--clay-ink); }
+.chip.sky { background: var(--sky-fill); border-color: transparent; color: var(--sky); }
+.chip.sage { background: var(--sage-fill); border-color: transparent; color: var(--sage); }
+.chip.sand { background: var(--sand-fill); border-color: transparent; color: var(--sand); }
+
+/* Callouts */
+.callout { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.callout .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.callout.key { background: var(--clay-fill); border-color: transparent; }
+.callout.key .label { color: var(--clay-ink); }
+.callout.done { background: var(--sage-fill); border-color: transparent; }
+.callout.done .label { color: var(--sage); }
+.callout.warn { background: var(--sand-fill); border-color: transparent; }
+.callout.warn .label { color: var(--sand); }
+.callout ul { padding-left: 20px; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--raised); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.5; }
+th, td { text-align: left; padding: 10px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.wk { font-family: var(--font-mono); font-size: 12.5px; color: var(--clay-ink); white-space: nowrap; font-weight: 500; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td strong { color: var(--ink); }
+.tbl-min { min-width: 620px; }
+
+/* Code */
+.code { border: 1px solid var(--line); border-radius: var(--radius); background: var(--code-bg); overflow: hidden; min-width: 0; }
+.code-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px 8px 14px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.code-head .file { font-family: var(--font-mono); font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.code-head .lang { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--clay-ink); margin-right: 8px; }
+.copy { font: 600 12px var(--font-body); color: var(--ink-2); background: var(--raised); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; flex-shrink: 0; }
+.copy.ok { color: var(--sage); border-color: var(--sage); }
+pre { margin: 0; padding: 16px 18px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: var(--ink); tab-size: 2; }
+pre code { font-family: inherit; background: none; border: 0; padding: 0; }
+.token.comment, .token.prolog { color: var(--muted); font-style: italic; }
+.token.keyword, .token.atrule, .token.key, .token.important, .token.builtin { color: var(--clay-ink); }
+.token.string, .token.attr-value, .token.char { color: var(--sage); }
+.token.number, .token.boolean, .token.constant { color: var(--sand); }
+.token.function, .token.class-name, .token.property { color: var(--sky); }
+.token.punctuation, .token.operator { color: var(--muted); }
+.token.variable { color: var(--clay); }
+
+/* Figures */
+figure.fig { margin: 8px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: 18px 18px 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fig-scroll { overflow-x: auto; }
+figure.fig svg { display: block; width: 100%; min-width: 560px; height: auto; }
+figcaption { font-size: 13px; color: var(--muted); line-height: 1.5; display: flex; gap: 8px; }
+figcaption b { color: var(--clay-ink); font-weight: 600; white-space: nowrap; }
+
+/* Grids */
+.cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 720px) { .cols-2, .cols-3 { grid-template-columns: minmax(0, 1fr); } }
+.card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--raised); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.card h4 { margin: 0; font-size: 15px; color: var(--ink); font-weight: 700; }
+.card p, .card li { font-size: 14px; }
+.card .tag { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+.card.clay .tag { color: var(--clay-ink); } .card.sky .tag { color: var(--sky); } .card.sage .tag { color: var(--sage); } .card.sand .tag { color: var(--sand); }
+.card.feature { border-color: var(--clay); box-shadow: 0 0 0 1px var(--clay) inset; }
+
+/* Checklist */
+.checks { list-style: none; padding: 0 !important; display: flex; flex-direction: column; gap: 8px; }
+.checks li { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 10px; align-items: start; }
+.checks li::before { content: ""; width: 16px; height: 16px; margin-top: 4px; border: 1.6px solid var(--clay); border-radius: 4px; }
+
+.formula { font-family: var(--font-mono); font-size: 14px; background: var(--raised); border: 1px dashed var(--clay); border-radius: 8px; padding: 12px 16px; color: var(--ink); overflow-x: auto; }
+
+footer.end { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- Print: A4 ---------- */
+@page { size: A4; margin: 16mm 15mm 18mm; }
+@media print {
+  :root, :root:not([data-theme="light"]), :root[data-theme="dark"] {
+    --paper: #FFFFFF; --surface: #F4F2EC; --raised: #FFFFFF; --ink: #1F1E1D; --ink-2: #33312C;
+    --muted: #66625A; --line: #DDD9CE; --clay: #C15F3C; --clay-ink: #A3492A; --clay-fill: #F6DFD4;
+    --sky: #3F6F99; --sky-fill: #DCE7F2; --sage: #4F7D56; --sage-fill: #DDEADB; --sand: #A57A1E;
+    --sand-fill: #F2E6C8; --plain-fill: #FFFFFF; --code-bg: #F6F4EE; color-scheme: light;
+  }
+  html, body { background: #fff !important; }
+  body { font-size: 10.5pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body::before, .sidebar, .topbar, .scrim, .copy, .no-print { display: none !important; }
+  main { margin: 0 !important; padding: 0 !important; }
+  .wrap { max-width: none; }
+  header.doc { padding-bottom: 20px; }
+  h1 { font-size: 30pt; }
+  h2 { font-size: 20pt; }
+  h3 { font-size: 12pt; }
+  .lede { font-size: 12.5pt; }
+  section.s { padding-top: 22px; }
+  section.s.page { break-before: page; }
+  .s-head, h3 { break-after: avoid; }
+  figure.fig, .code, .callout, .card, tr, .meta { break-inside: avoid; }
+  .table-wrap, .fig-scroll { overflow: visible; }
+  figure.fig svg { min-width: 0; }
+  .tbl-min { min-width: 0; }
+  pre { white-space: pre-wrap; word-break: break-word; font-size: 8.6pt; overflow: visible; }
+  a { color: var(--ink); text-decoration: none; }
+  .res a::after { content: " (" attr(href) ")"; font-size: 8pt; color: var(--muted); word-break: break-all; }
+  footer.end { margin-top: 28px; }
+}
+</style>
+
+<div class="light-tokens" id="lightProbe" aria-hidden="true"></div>
+
+<div class="topbar">
+  <span class="t">DevOps to AI Infra</span>
+  <button class="toc-toggle" id="tocToggle" type="button" aria-expanded="false" aria-controls="sidebar">Contents</button>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Table of contents">
+  <div class="brand">
+    <span class="kicker">Career roadmap</span>
+    <span class="name">DevOps to AI Infrastructure</span>
+  </div>
+  <nav class="toc" id="toc">
+    <div class="toc-group">
+      <h4>Start here</h4>
+      <a href="#overview"><span class="n">01</span>Who this is for</a>
+      <a href="#landscape"><span class="n">02</span>The AI job market</a>
+      <a href="#stack"><span class="n">03</span>The AI infra stack</a>
+      <a href="#gaps"><span class="n">04</span>Skill gap map</a>
+    </div>
+    <div class="toc-group">
+      <h4>26-week roadmap</h4>
+      <a href="#timeline"><span class="n">05</span>Timeline</a>
+      <a href="#phase-1"><span class="n">P1</span>Python and LLM basics</a>
+      <a href="#phase-2"><span class="n">P2</span>Kubernetes and CKA</a>
+      <a href="#phase-3"><span class="n">P3</span>LLM gateway at work</a>
+      <a href="#phase-4"><span class="n">P4</span>GPU model serving</a>
+      <a href="#phase-5"><span class="n">P5</span>RAG, evals, security</a>
+      <a href="#phase-6"><span class="n">P6</span>Platform and job market</a>
+    </div>
+    <div class="toc-group">
+      <h4>Execution</h4>
+      <a href="#public"><span class="n">06</span>Build in public</a>
+      <a href="#routine"><span class="n">07</span>Weekly routine</a>
+      <a href="#budget"><span class="n">08</span>Budget and cost control</a>
+      <a href="#certs"><span class="n">09</span>Certifications</a>
+    </div>
+    <div class="toc-group">
+      <h4>Reference</h4>
+      <a href="#interviews"><span class="n">10</span>Interview preparation</a>
+      <a href="#checklist"><span class="n">11</span>Top 1% checklist</a>
+      <a href="#resources"><span class="n">12</span>Resources</a>
+    </div>
+  </nav>
+  <div class="sidebar-foot no-print">
+    <button class="btn" id="printBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="6" y="14" width="12" height="7" rx="1"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/></svg>
+      Print / Save as PDF (A4)
+    </button>
+    <div class="print-note" id="printNote" hidden>
+      Printing is blocked in this embedded viewer. Open the page directly in your browser and press this button again (or Ctrl+P), then choose <strong>Save as PDF</strong> and paper size <strong>A4</strong>. A ready-made PDF is also in the GitHub repository.
+    </div>
+  </div>
+</aside>
+
+<main>
+<div class="wrap">
+
+<header class="doc" id="top">
+  <span class="eyebrow">Open learning roadmap · November 2026</span>
+  <h1>From DevOps engineer to AI infrastructure engineer</h1>
+  <p class="lede">A 26-week plan for DevOps, cloud and platform engineers who want to move into AI infrastructure. You keep the skills that already pay, add the layer companies are short of, which is running AI models in production, and build public proof that you can do it.</p>
+  <dl class="meta">
+    <div><dt>Horizon</dt><dd>26 weeks</dd></div>
+    <div><dt>Effort</dt><dd>8–10 h / week</dd></div>
+    <div><dt>Budget</dt><dd>$25–60 / month</dd></div>
+    <div><dt>Target role</dt><dd>AI Platform Eng.</dd></div>
+  </dl>
+</header>
+
+<!-- 01 -->
+<section class="s" id="overview">
+  <div class="s-head"><span class="s-num">01 · START HERE</span><h2>Who this is for</h2></div>
+  <p>This roadmap is for engineers who already run infrastructure and want to run AI workloads too. It assumes the starting point below. If you're ahead on a row, skip or shorten the phase that covers it.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Area</th><th>Assumed starting point</th><th>Approach in this plan</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Experience</strong></td><td>1–5 years in DevOps, SRE or cloud engineering</td><td>Build on what you already do well rather than starting over</td></tr>
+        <tr><td><strong>Cloud</strong></td><td>Comfortable with one cloud (examples use AWS)</td><td>Stay on the cloud you know. The ideas transfer to Azure (AKS) and GCP (GKE).</td></tr>
+        <tr><td><strong>Kubernetes</strong></td><td>You deploy apps but don't operate clusters</td><td>Learn to operate clusters and pass the CKA. GPU scheduling depends on this.</td></tr>
+        <tr><td><strong>Python</strong></td><td>Little or none</td><td>Four focused weeks up to writing FastAPI services and async scripts</td></tr>
+        <tr><td><strong>ML knowledge</strong></td><td>None needed</td><td>Learn the infrastructure side of models: memory, serving, cost. No heavy maths.</td></tr>
+        <tr><td><strong>Hardware</strong></td><td>An ordinary laptop, no GPU</td><td>Rent cloud GPUs by the hour. Keep local work to kind clusters and API-based tools.</td></tr>
+        <tr><td><strong>Time</strong></td><td>8–10 hours a week alongside a full-time job</td><td>Six phases over 26 weeks, each ending in something you can show</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout key">
+    <span class="label">The core idea</span>
+    <p>Most DevOps engineers learning AI collect course certificates. You will collect <strong>numbers</strong>: cost per million tokens, time to first token, GPU utilization, and money saved for your company. Hiring managers remember numbers, and they're difficult to fake.</p>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="s" id="landscape">
+  <div class="s-head"><span class="s-num">02 · START HERE</span><h2>The AI job market for DevOps engineers</h2></div>
+  <p>AI did not replace DevOps. It added an expensive new kind of workload. A GPU node costs 10–50× more per hour than a typical web node, model files are gigabytes in size, and traffic is measured in tokens rather than requests. Companies need people who can run these workloads reliably and cheaply, and very few people have both the infrastructure skills and the AI knowledge.</p>
+  <figure class="fig">
+    <div class="fig-scroll"><svg data-diagram="lanes" role="img" aria-label="Diagram: from DevOps, three lanes lead to AI Platform Engineer. AI Infrastructure is the primary lane, LLMOps the second skill, MLOps awareness only."></svg></div>
+    <figcaption><b>Fig. 1</b><span>Three lanes open to a DevOps engineer. You take the AI infrastructure lane, add LLMOps as a second skill, and learn only enough MLOps to talk with data scientists.</span></figcaption>
+  </figure>
+  <div class="cols-3">
+    <div class="card clay feature">
+      <span class="tag">Primary · AI infrastructure</span>
+      <h4>Run the machines that run models</h4>
+      <p>GPU clusters, model serving with vLLM and KServe, autoscaling, and GPU cost control. It builds on your Kubernetes, Terraform and AWS skills, and it's the hardest of the three to automate away.</p>
+    </div>
+    <div class="card sky">
+      <span class="tag">Second skill · LLMOps</span>
+      <h4>Run the apps built on models</h4>
+      <p>Gateways, RAG pipelines, evaluations, tracing, guardrails and token budgets. Every company that calls LLM APIs needs this now.</p>
+    </div>
+    <div class="card">
+      <span class="tag" style="color:var(--muted)">Awareness · MLOps</span>
+      <h4>Pipelines for training models</h4>
+      <p>MLflow, Kubeflow and feature stores. Learn the vocabulary, but don't specialize. Classic MLOps tooling is consolidating into managed platforms.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="s" id="stack">
+  <div class="s-head"><span class="s-num">03 · START HERE</span><h2>The AI infrastructure stack</h2></div>
+  <p>This is the map for the whole plan. Today you know the orchestration layer from the application side. By week 26 you'll have run every layer yourself and measured it.</p>
+  <figure class="fig">
+    <div class="fig-scroll"><svg data-diagram="stack" role="img" aria-label="Diagram: five stacked layers, applications, gateway, model serving, orchestration and compute, with observability and FinOps spanning all of them."></svg></div>
+    <figcaption><b>Fig. 2</b><span>Each layer maps to a phase: compute and orchestration in P2 and P4, serving in P4, gateway in P3, applications in P5, observability and FinOps in P3–P6.</span></figcaption>
+  </figure>
+  <h3>GPU memory, the one formula to learn first</h3>
+  <p>Most AI infrastructure decisions start with a single question: does the model fit in GPU memory? Learn this before you touch a GPU.</p>
+  <div class="formula">VRAM ≈ parameters × bytes per parameter × 1.2&nbsp;&nbsp;(+ KV cache for long contexts and many users)</div>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Model size</th><th class="num">FP16 (2 B)</th><th class="num">INT8 (1 B)</th><th class="num">INT4 / AWQ (0.5 B)</th><th>Smallest practical AWS GPU</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1.5B</strong></td><td class="num">~4 GB</td><td class="num">~2 GB</td><td class="num">~1 GB</td><td>Any GPU, even g4dn (T4 16 GB)</td></tr>
+        <tr><td><strong>7–8B</strong></td><td class="num">~18 GB</td><td class="num">~9 GB</td><td class="num">~5 GB</td><td>g5 (A10G 24 GB) or g6 (L4 24 GB)</td></tr>
+        <tr><td><strong>14B</strong></td><td class="num">~34 GB</td><td class="num">~17 GB</td><td class="num">~9 GB</td><td>g6e (L40S 48 GB), or g5 with AWQ</td></tr>
+        <tr><td><strong>70B</strong></td><td class="num">~168 GB</td><td class="num">~84 GB</td><td class="num">~42 GB</td><td>p4d / p5 (multiple A100 / H100 GPUs)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="hint">Weights plus about 20% overhead. Leave additional headroom for the KV cache, which grows with context length × concurrent requests.</p>
+</section>
+
+<!-- 04 -->
+<section class="s" id="gaps">
+  <div class="s-head"><span class="s-num">04 · START HERE</span><h2>Skill gap map</h2></div>
+  <p>You don't need a data science degree. You need the eight skills below, and you already have most of what each one is built on.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Skill</th><th>Today</th><th>Needed for the role</th><th>Closed in</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Python</strong></td><td>Little or none</td><td>Write APIs, async load tests, small operators and glue code</td><td><span class="chip clay">P1</span></td></tr>
+        <tr><td><strong>LLM basics</strong></td><td>Uses ChatGPT</td><td>Tokens, context, KV cache, quantization, VRAM math, inference vs. training</td><td><span class="chip clay">P1</span></td></tr>
+        <tr><td><strong>K8s operations</strong></td><td>Deploys apps</td><td>Scheduling, taints, node pools, storage, troubleshooting, CKA level</td><td><span class="chip sky">P2</span></td></tr>
+        <tr><td><strong>LLM gateway</strong></td><td>None</td><td>Central keys, budgets, fallbacks, rate limits, tracing</td><td><span class="chip sage">P3</span></td></tr>
+        <tr><td><strong>GPU on K8s</strong></td><td>None</td><td>GPU Operator, device plugin, Karpenter GPU pools, DCGM metrics</td><td><span class="chip sand">P4</span></td></tr>
+        <tr><td><strong>Model serving</strong></td><td>None</td><td>vLLM, batching, autoscaling on queue depth, cold starts, benchmarking</td><td><span class="chip sand">P4</span></td></tr>
+        <tr><td><strong>RAG and evals</strong></td><td>None</td><td>Embeddings, vector DB, eval sets in CI, guardrails</td><td><span class="chip sky">P5</span></td></tr>
+        <tr><td><strong>AI FinOps</strong></td><td>General AWS cost awareness</td><td>Cost per 1M tokens, GPU utilization, spot strategy, showback per team</td><td><span class="chip">P3–P6</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="s page" id="timeline">
+  <div class="s-head"><span class="s-num">05 · ROADMAP</span><h2>The 26-week timeline</h2></div>
+  <p>There are six phases. Each one ends with something you can show: a script, a certificate, a working system at your company, or a public write-up with numbers.</p>
+  <figure class="fig">
+    <div class="fig-scroll"><svg data-diagram="timeline" role="img" aria-label="Timeline: Phase 1 weeks 1 to 4, Phase 2 weeks 5 to 8, Phase 3 weeks 9 to 12, Phase 4 weeks 13 to 18, Phase 5 weeks 19 to 22, Phase 6 weeks 23 to 26. Milestones: CKA at week 8, gateway demo at week 12, flagship post at week 18, applications at week 26."></svg></div>
+    <figcaption><b>Fig. 3</b><span>Phase 4 gets the most time because it produces your flagship portfolio project. The markers on the axis are your four milestones.</span></figcaption>
+  </figure>
+</section>
+
+<!-- P1 -->
+<section class="s page" id="phase-1">
+  <div class="s-head"><span class="s-num">PHASE 1 · WEEKS 1–4</span><h2>Python and LLM basics</h2></div>
+  <div class="phase-tag"><span class="chip clay">Python</span><span class="chip clay">FastAPI</span><span class="chip clay">LLM concepts</span><span class="chip">Cost: ~$4 in API tokens</span></div>
+  <p>Python is the language of the AI ecosystem. vLLM, LiteLLM, Ray, Kubeflow and every evaluation tool are written in it or configured with it. Learn it through ops problems you already understand, not through generic exercises.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Week</th><th>Learn</th><th>Build</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td class="wk">W1</td><td>Types, functions, dicts and lists, files, <code>venv</code>, <code>pip</code>, <code>subprocess</code>, JSON</td><td>Pod restart reporter (below)</td><td>First repo: <code>ops-python</code></td></tr>
+        <tr><td class="wk">W2</td><td><code>argparse</code>, <code>httpx</code>, <code>boto3</code>, exceptions, logging, <code>pytest</code></td><td>CLI that lists EC2 spend by tag using Cost Explorer</td><td>Tests passing in GitHub Actions</td></tr>
+        <tr><td class="wk">W3</td><td>FastAPI, Pydantic, Docker multi-stage builds, the OpenAI-compatible API format</td><td>Log summarizer API that calls an LLM, deployed to kind</td><td>Container image plus Helm chart</td></tr>
+        <tr><td class="wk">W4</td><td>Tokens, context window, temperature, embeddings, KV cache, quantization, inference vs. training</td><td>VRAM calculator script using the formula in section 03</td><td><strong>Post #1:</strong> "How much GPU does a 7B model need?"</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">Python</span>restarts.py · week 1</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-python">import json
+import subprocess
+
+out = subprocess.run(
+    ["kubectl", "get", "pods", "-A", "-o", "json"],
+    capture_output=True, text=True, check=True,
+).stdout
+
+for pod in json.loads(out)["items"]:
+    for cs in pod["status"].get("containerStatuses", []):
+        if cs["restartCount"] > 3:
+            ns, name = pod["metadata"]["namespace"], pod["metadata"]["name"]
+            print(f"{ns}/{name}  container={cs['name']}  restarts={cs['restartCount']}")</code></pre>
+  </div>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">Python</span>app.py · week 3 log summarizer</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-python">from fastapi import FastAPI
+from openai import OpenAI
+from pydantic import BaseModel
+
+app = FastAPI()
+client = OpenAI()  # in Phase 3, point base_url at your own LLM gateway
+
+
+class Logs(BaseModel):
+    text: str
+
+
+@app.post("/summarize")
+def summarize(logs: Logs):
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an SRE. List the errors and the likely root cause in 5 bullets."},
+            {"role": "user", "content": logs.text[-12000:]},  # keep the newest lines; tokens cost money
+        ],
+    )
+    return {"summary": resp.choices[0].message.content, "tokens": resp.usage.total_tokens}</code></pre>
+  </div>
+  <div class="callout done">
+    <span class="label">Phase 1 is done when</span>
+    <ul class="checks">
+      <li>You can write a 50-line Python script without copying from a tutorial.</li>
+      <li>You can explain, without notes, why a 7B model in FP16 does not fit on a 16 GB GPU.</li>
+      <li>Your log summarizer runs in a kind cluster and reports token usage on every call.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- P2 -->
+<section class="s page" id="phase-2">
+  <div class="s-head"><span class="s-num">PHASE 2 · WEEKS 5–8</span><h2>Kubernetes operations and the CKA</h2></div>
+  <div class="phase-tag"><span class="chip sky">Cluster operations</span><span class="chip sky">Scheduling</span><span class="chip sky">CKA exam</span><span class="chip">Cost: exam fee + ~$6 in VMs</span></div>
+  <p>GPU workloads are a scheduling problem first. Taints, tolerations, node affinity, resource limits and priority classes decide which pod gets a GPU that costs $1 an hour. Everything in Phase 4 depends on you knowing these well.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Week</th><th>Learn</th><th>Practice</th><th>Why it matters for AI</th></tr></thead>
+      <tbody>
+        <tr><td class="wk">W5</td><td>Control plane, kubeadm, etcd backup and restore, upgrades</td><td>Build a two-node cluster with kubeadm on spot VMs, then destroy it</td><td>Knowing how clusters break makes GPU node debugging possible</td></tr>
+        <tr><td class="wk">W6</td><td>Taints and tolerations, affinity, requests and limits, PriorityClass, DaemonSets</td><td>Simulate a "GPU" node with a taint and an extended resource</td><td>This is exactly how <code>nvidia.com/gpu</code> scheduling works</td></tr>
+        <tr><td class="wk">W7</td><td>Services, Ingress, NetworkPolicy, PV, PVC, StorageClass, troubleshooting</td><td>Killercoda CKA scenarios, debugging broken clusters</td><td>Model weights need fast storage, and inference needs ingress</td></tr>
+        <tr><td class="wk">W8</td><td>Exam speed: <code>kubectl</code> imperative commands, aliases, docs navigation</td><td>Two killer.sh mock exams, then take the exam</td><td><strong>Milestone:</strong> CKA certified</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <span class="label">Learn alongside the exam</span>
+    <p>Helm chart authoring, CRDs and the operator pattern (read the code of one small operator), and Karpenter concepts. The CKA doesn't test these, but Phase 4 uses all of them.</p>
+  </div>
+</section>
+
+<!-- P3 -->
+<section class="s page" id="phase-3">
+  <div class="s-head"><span class="s-num">PHASE 3 · WEEKS 9–12</span><h2>An LLM gateway at your company</h2></div>
+  <div class="phase-tag"><span class="chip sage">LiteLLM</span><span class="chip sage">Langfuse</span><span class="chip sage">FinOps</span><span class="chip clay">First internal win</span></div>
+  <p>Most companies already call LLM APIs. That usually means API keys copied into many services, nobody knowing which team spends what, and outages whenever a provider goes down. A gateway fixes all three, and building one is mostly DevOps work. It's the fastest way to become known as the AI infrastructure person at your company.</p>
+  <figure class="fig">
+    <div class="fig-scroll"><svg data-diagram="gateway" role="img" aria-label="Diagram: three internal teams call an LLM gateway running LiteLLM on EKS. The gateway routes to OpenAI, Bedrock, and later a self-hosted vLLM, and stores spend in Postgres, rate limits in Redis, traces in Langfuse, and dashboards in Grafana."></svg></div>
+    <figcaption><b>Fig. 4</b><span>Each team gets a virtual key with its own budget. The gateway handles retries, fallbacks and cost tracking. In Phase 4 your own vLLM becomes another backend behind it.</span></figcaption>
+  </figure>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Week</th><th>Do</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td class="wk">W9</td><td>Find out which services call which LLM API, how keys are stored, and the monthly spend. Write a one-page proposal (template below).</td><td>Proposal sent to your lead</td></tr>
+        <tr><td class="wk">W10</td><td>Deploy LiteLLM on EKS with Helm, using RDS Postgres, Redis and secrets from AWS Secrets Manager. Create one virtual key and budget per team.</td><td>Gateway running in a dev or staging environment</td></tr>
+        <tr><td class="wk">W11</td><td>Add fallbacks, retries and rate limits. Send traces to Langfuse. Build a Grafana dashboard for p95 latency, tokens, errors and cost per team.</td><td>Dashboard screenshot</td></tr>
+        <tr><td class="wk">W12</td><td>Pilot with one friendly team for a week, then demo the numbers.</td><td><strong>Milestone:</strong> internal demo. <strong>Post #2</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">YAML</span>litellm-config.yaml</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-yaml">model_list:
+  - model_name: chat-default              # what apps ask for
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: chat-default              # same name = fallback / load-balance pool
+    litellm_params:
+      model: bedrock/&lt;model-id-enabled-in-your-account&gt;
+      aws_region_name: us-east-1
+  - model_name: chat-private              # added in Phase 4
+    litellm_params:
+      model: hosted_vllm/Qwen/Qwen2.5-7B-Instruct-AWQ
+      api_base: http://vllm-qwen.inference.svc:8000/v1
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 2
+
+litellm_settings:
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL</code></pre>
+  </div>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">Bash</span>install and issue a team key</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-bash">helm install llm-gateway oci://ghcr.io/berriai/litellm-helm \
+  --namespace ai-gateway --create-namespace -f values.yaml
+
+# one key per team: budget in USD, reset every 30 days, 120 requests/min
+curl -s https://llm-gateway.internal/key/generate \
+  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"team_id": "support-bot", "max_budget": 200, "budget_duration": "30d", "rpm_limit": 120}'</code></pre>
+  </div>
+  <h3>One-page proposal template</h3>
+  <div class="cols-2">
+    <div class="card"><span class="tag" style="color:var(--muted)">Problem</span><p>"We call LLM APIs from N services with M separate keys. We can't see spend per team, keys are hard to rotate, and a provider outage takes features down."</p></div>
+    <div class="card"><span class="tag" style="color:var(--muted)">Proposal</span><p>"An internal gateway on our existing EKS cluster. One endpoint, a key per team, automatic fallback to a second provider, and a cost dashboard."</p></div>
+    <div class="card"><span class="tag" style="color:var(--muted)">Cost and effort</span><p>"About 2 vCPU of capacity and a small RDS instance. Three weeks of my time. No changes to application code apart from the base URL."</p></div>
+    <div class="card"><span class="tag" style="color:var(--muted)">Success measure</span><p>"After 30 days: 100% of LLM spend visible per team, fewer than 1% failed requests, and one provider outage absorbed with no user impact."</p></div>
+  </div>
+</section>
+
+<!-- P4 -->
+<section class="s page" id="phase-4">
+  <div class="s-head"><span class="s-num">PHASE 4 · WEEKS 13–18 · FLAGSHIP</span><h2>Serving open models on GPU Kubernetes</h2></div>
+  <div class="phase-tag"><span class="chip sand">vLLM</span><span class="chip sand">Karpenter GPU pools</span><span class="chip sand">KEDA</span><span class="chip sand">Benchmarking</span><span class="chip">Cost: ~$25–35 in spot GPU hours</span></div>
+  <p>This project sets you apart from other DevOps engineers. You'll serve an open-weight model on EKS GPU spot nodes, autoscale it on queue depth, benchmark it honestly, and compare its cost per million tokens with the API your company pays for today.</p>
+  <figure class="fig">
+    <div class="fig-scroll"><svg data-diagram="serving" role="img" aria-label="Diagram: client calls ingress, which routes to vLLM pods on a Karpenter GPU node pool in EKS. Model weights load from an S3 cache. Prometheus scrapes vLLM and DCGM metrics, KEDA scales pods on queue depth, and Grafana shows latency, throughput and cost."></svg></div>
+    <figcaption><b>Fig. 5</b><span>The flagship architecture. KEDA reads vLLM's waiting-request count from Prometheus and adds pods. Karpenter then adds spot GPU nodes for those pods and removes them when they're idle.</span></figcaption>
+  </figure>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Week</th><th>Do</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td class="wk">W13</td><td>GPU basics: CUDA, drivers, device plugin vs. GPU Operator, MIG and time-slicing. Rent a RunPod GPU for an hour and run vLLM in plain Docker.</td><td>First tokens from a GPU you control</td></tr>
+        <tr><td class="wk">W14</td><td>Terraform an EKS cluster with Karpenter and a GPU NodePool (g5/g6, spot first). Install the NVIDIA device plugin or GPU Operator and the DCGM exporter.</td><td><code>terraform apply</code> in 20 minutes, <code>destroy</code> in 10</td></tr>
+        <tr><td class="wk">W15</td><td>Deploy vLLM with a 7B AWQ model, health probes and <code>/dev/shm</code>. Cache weights to cut cold starts. Register it in your gateway.</td><td>OpenAI-compatible endpoint on your cluster</td></tr>
+        <tr><td class="wk">W16</td><td>KEDA autoscaling on <code>vllm:num_requests_waiting</code>. Measure cold start from pod scheduled to first token.</td><td>Scaling graph from 1 to 2 replicas</td></tr>
+        <tr><td class="wk">W17</td><td>Benchmark at concurrency 1, 8 and 32: throughput, TTFT p50/p95, and cost per 1M tokens. Compare AWQ with FP16.</td><td>Benchmark table and charts</td></tr>
+        <tr><td class="wk">W18</td><td>Polish the repo README with the architecture diagram, results and reproduction steps.</td><td><strong>Milestone: Post #3, your flagship</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">YAML</span>karpenter-gpu-nodepool.yaml</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-yaml">apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: gpu
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: gpu
+      requirements:
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["g5", "g6"]          # A10G / L4, 24 GB each
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["xlarge", "2xlarge"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]  # spot first; on-demand as fallback
+      taints:
+        - key: nvidia.com/gpu
+          effect: NoSchedule             # only GPU workloads land here
+  limits:
+    nvidia.com/gpu: 2                    # a hard cap on GPUs is a hard cap on spend
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 5m</code></pre>
+  </div>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">YAML</span>vllm-deployment.yaml</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-qwen
+  namespace: inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: vllm-qwen }
+  template:
+    metadata:
+      labels: { app: vllm-qwen }
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: gpu
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.6.3      # pin the tag you tested
+          args:
+            - --model=Qwen/Qwen2.5-7B-Instruct-AWQ
+            - --max-model-len=8192
+            - --gpu-memory-utilization=0.90
+          ports:
+            - containerPort: 8000
+          resources:
+            requests: { cpu: "3", memory: 12Gi }
+            limits:   { memory: 13Gi, nvidia.com/gpu: 1 }
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          volumeMounts:
+            - { name: hf-cache, mountPath: /root/.cache/huggingface }
+            - { name: shm, mountPath: /dev/shm }
+      volumes:
+        - name: hf-cache
+          emptyDir: {}                       # upgrade: pre-load from S3 in an init container
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: 2Gi }</code></pre>
+  </div>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">YAML</span>keda-scaledobject.yaml</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-yaml">apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: vllm-qwen
+  namespace: inference
+spec:
+  scaleTargetRef:
+    name: vllm-qwen
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  cooldownPeriod: 300
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-server.monitoring:80
+        query: sum(vllm:num_requests_waiting{namespace="inference"})
+        threshold: "5"      # more than 5 queued requests per pod: add a pod</code></pre>
+  </div>
+  <h3>Benchmark it yourself</h3>
+  <p>This script also serves as Python practice: async code, streaming responses and percentiles. For rigorous numbers later, use vLLM's own benchmark tool or GuideLLM.</p>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">Python</span>bench.py</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-python">import asyncio, json, statistics, time
+import httpx
+
+URL = "http://localhost:8000/v1/chat/completions"   # kubectl port-forward svc/vllm-qwen 8000
+MODEL = "Qwen/Qwen2.5-7B-Instruct-AWQ"
+PROMPT = "Explain Kubernetes taints and tolerations in 150 words."
+
+
+async def one_request(client):
+    body = {"model": MODEL, "messages": [{"role": "user", "content": PROMPT}],
+            "max_tokens": 256, "stream": True}
+    start, ttft, tokens = time.perf_counter(), None, 0
+    async with client.stream("POST", URL, json=body) as resp:
+        async for line in resp.aiter_lines():
+            if not line.startswith("data: ") or line.endswith("[DONE]"):
+                continue
+            chunk = json.loads(line[6:])
+            if chunk["choices"] and chunk["choices"][0]["delta"].get("content"):
+                ttft = ttft or time.perf_counter() - start
+                tokens += 1                     # approx: one streamed chunk = one token
+    return ttft, tokens
+
+
+async def run(concurrency, total=64):
+    sem = asyncio.Semaphore(concurrency)
+    async with httpx.AsyncClient(timeout=180) as client:
+        async def guarded():
+            async with sem:
+                return await one_request(client)
+        t0 = time.perf_counter()
+        results = await asyncio.gather(*[guarded() for _ in range(total)])
+        wall = time.perf_counter() - t0
+    ttfts = sorted(r[0] for r in results if r[0])
+    tok_s = sum(r[1] for r in results) / wall
+    p95 = ttfts[int(0.95 * (len(ttfts) - 1))]
+    print(f"c={concurrency:>3}  {tok_s:7.1f} tok/s  TTFT p50={statistics.median(ttfts):.2f}s  p95={p95:.2f}s")
+
+
+for c in (1, 8, 32):
+    asyncio.run(run(c))</code></pre>
+  </div>
+  <h3>Turn throughput into money</h3>
+  <div class="formula">cost per 1M tokens = GPU price per hour ÷ (tokens per second × 3,600) × 1,000,000</div>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Example (check current AWS pricing)</th><th class="num">$/hour</th><th class="num">Throughput</th><th class="num">$ per 1M tokens</th></tr></thead>
+      <tbody>
+        <tr><td>g5.xlarge on-demand, light load</td><td class="num">~1.01</td><td class="num">150 tok/s</td><td class="num">~1.87</td></tr>
+        <tr><td>g5.xlarge on-demand, batched at c=32</td><td class="num">~1.01</td><td class="num">1,000 tok/s</td><td class="num">~0.28</td></tr>
+        <tr><td>g5.xlarge spot, batched at c=32</td><td class="num">~0.40</td><td class="num">1,000 tok/s</td><td class="num">~0.11</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout key">
+    <span class="label">The insight to publish</span>
+    <p>Self-hosting is only cheap when the GPU stays busy. At low traffic, a small hosted API model often costs less. Showing <em>where</em> the break-even point is, with your own measurements, is the kind of judgment senior engineers are hired for.</p>
+  </div>
+</section>
+
+<!-- P5 -->
+<section class="s page" id="phase-5">
+  <div class="s-head"><span class="s-num">PHASE 5 · WEEKS 19–22</span><h2>RAG, evals and AI security</h2></div>
+  <div class="phase-tag"><span class="chip sky">pgvector or Qdrant</span><span class="chip sky">Evals in CI</span><span class="chip sky">Guardrails</span></div>
+  <p>Now add the LLMOps layer on top of your platform. Build an <strong>ops runbook assistant</strong> that answers on-call questions from your team's own runbooks. Treat it like any production service: ship it with evals, tracing and security controls.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Week</th><th>Do</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td class="wk">W19</td><td>Learn embeddings and chunking. Run pgvector (or Qdrant) on Kubernetes. Write an ingestion CronJob that indexes runbooks from Git.</td><td>Index refreshes nightly</td></tr>
+        <tr><td class="wk">W20</td><td>Build a FastAPI RAG service that calls models through your gateway. Trace every step in Langfuse.</td><td>Answers that cite the runbook they came from</td></tr>
+        <tr><td class="wk">W21</td><td>Write a golden set of 30 questions and expected answers. Score them with an LLM-as-judge or Ragas in GitHub Actions, and fail the build when the score drops.</td><td>Eval badge in the README</td></tr>
+        <tr><td class="wk">W22</td><td>Security: the OWASP Top 10 for LLM applications, prompt injection, PII redaction, NetworkPolicies, and secrets handling.</td><td>Threat model page. <strong>Post #4</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- P6 -->
+<section class="s page" id="phase-6">
+  <div class="s-head"><span class="s-num">PHASE 6 · WEEKS 23–26</span><h2>Platform polish and the job market</h2></div>
+  <div class="phase-tag"><span class="chip">Argo CD</span><span class="chip">GPU FinOps</span><span class="chip">Résumé</span><span class="chip">Interviews</span></div>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Week</th><th>Do</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td class="wk">W23</td><td>GitOps for models: Argo CD deploys model versions, with a canary rollout of a new model behind the gateway.</td><td>Model upgrade with zero downtime</td></tr>
+        <tr><td class="wk">W24</td><td>GPU FinOps: utilization from DCGM, idle GPU alerts, spot interruption handling, cost showback per team.</td><td>"GPU waste" dashboard</td></tr>
+        <tr><td class="wk">W25</td><td>Rewrite your résumé and LinkedIn around outcomes. Pin your 3 repos. Write one case study per project.</td><td>Profile ready</td></tr>
+        <tr><td class="wk">W26</td><td>Mock system design interviews (see section 10). Apply to 10 carefully chosen roles and ask for referrals.</td><td><strong>Milestone: applications sent</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>Résumé bullets you'll be able to write honestly</h3>
+  <ul>
+    <li>"Built an internal LLM gateway on EKS used by <em>N</em> teams. Made 100% of LLM spend visible per team and absorbed a provider outage with zero failed user requests."</li>
+    <li>"Served open-weight LLMs on EKS GPU spot capacity with Karpenter and KEDA, reaching $0.<em>xx</em> per 1M tokens at <em>N</em> tok/s, <em>X</em>% cheaper than our hosted API at our traffic level."</li>
+    <li>"Shipped a RAG runbook assistant with automated evals in CI and a documented threat model."</li>
+  </ul>
+</section>
+
+<!-- 06 -->
+<section class="s page" id="public">
+  <div class="s-head"><span class="s-num">06 · EXECUTION</span><h2>Build in public</h2></div>
+  <p>Visibility compounds. A post with real numbers gets found by recruiters, tool maintainers and hiring managers long after you publish it. Post every one or two weeks, and every post needs one measured result.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>#</th><th>Week</th><th>Post</th><th>Hook (the number)</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="wk">W4</td><td>How much GPU does a 7B model need?</td><td>A VRAM table you computed and checked</td></tr>
+        <tr><td class="num">2</td><td class="wk">W12</td><td>We put every LLM call behind one gateway</td><td>Spend per team, before and after</td></tr>
+        <tr><td class="num">3</td><td class="wk">W18</td><td>Self-hosting an LLM on EKS spot GPUs: real costs</td><td>$ per 1M tokens vs. the API, with the break-even point</td></tr>
+        <tr><td class="num">4</td><td class="wk">W22</td><td>Evals in CI for a RAG assistant</td><td>A score that caught a real regression</td></tr>
+        <tr><td class="num">5</td><td class="wk">W24</td><td>Where our GPU money was wasted</td><td>Idle GPU hours found and removed</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="cols-2">
+    <div class="card"><span class="tag" style="color:var(--clay-ink)">Post structure</span>
+      <ol><li>The problem, in one sentence</li><li>The setup (architecture diagram)</li><li>The numbers (a table or chart)</li><li>What surprised you</li><li>Repo link and what you'd do next</li></ol>
+    </div>
+    <div class="card"><span class="tag" style="color:var(--clay-ink)">Where to post</span>
+      <ul><li>LinkedIn: a short version with the diagram</li><li>Blog (Hashnode or dev.to): the full version</li><li>GitHub: a README with reproduction steps</li><li>The tool's community (vLLM, LiteLLM, CNCF Slack) when you find a bug or an insight</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="s" id="routine">
+  <div class="s-head"><span class="s-num">07 · EXECUTION</span><h2>Weekly routine (about 9 hours)</h2></div>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Day</th><th class="num">Time</th><th>Activity</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Mon, Wed, Fri</strong></td><td class="num">3 × 1.5 h</td><td>Learn: docs, a course chapter or a paper, and take notes in your repo</td></tr>
+        <tr><td><strong>Saturday</strong></td><td class="num">3 h</td><td>Build: one focused hands-on session on cloud GPUs or EKS, then <code>terraform destroy</code></td></tr>
+        <tr><td><strong>Sunday</strong></td><td class="num">1.5 h</td><td>Write: update the README, draft the post, plan next week</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout warn">
+    <span class="label">Pitfalls to avoid</span>
+    <ul>
+      <li><strong>Tutorial hell.</strong> Watching without building. Follow the rule of one hour learning for every hour building.</li>
+      <li><strong>Chasing every new tool.</strong> The stack in section 03 is enough. Read about new tools, but don't switch plans for them.</li>
+      <li><strong>Skipping the write-up.</strong> An unpublished project is invisible to anyone hiring.</li>
+      <li><strong>Forgetting a GPU running.</strong> A forgotten g5 node costs about $24 a day. See the next section.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="s" id="budget">
+  <div class="s-head"><span class="s-num">08 · EXECUTION</span><h2>Budget and cost control</h2></div>
+  <p>Prices are approximate, in US dollars. Check current AWS and RunPod prices before each phase.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Item</th><th>When</th><th class="num">Approx. per month</th></tr></thead>
+      <tbody>
+        <tr><td>LLM API tokens (OpenAI, Bedrock)</td><td>P1, P3, P5</td><td class="num">$3–6</td></tr>
+        <tr><td>Spot VMs for kubeadm practice</td><td>P2</td><td class="num">$4–7</td></tr>
+        <tr><td>EKS control plane ($0.10/h, only while practicing)</td><td>P3–P6</td><td class="num">$5–10</td></tr>
+        <tr><td>Spot GPU hours (g5/g6 or RunPod, ~$0.40–1.00/h)</td><td>P4–P6</td><td class="num">$18–35</td></tr>
+        <tr><td><strong>Typical total</strong></td><td></td><td class="num"><strong>$25–60</strong></td></tr>
+        <tr><td>CKA exam, one time (often 30–50% off in sales)</td><td>W8</td><td class="num">~$445 once</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Set up a budget alarm before you start any GPU work. This is also your first piece of FinOps-as-code to show in interviews.</p>
+  <div class="code">
+    <div class="code-head"><span class="file"><span class="lang">HCL</span>budget.tf</span><button class="copy" type="button">Copy</button></div>
+<pre><code class="language-hcl">resource "aws_budgets_budget" "learning" {
+  name         = "ai-learning-monthly"
+  budget_type  = "COST"
+  limit_amount = "50"
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = ["you@example.com"]
+  }
+}</code></pre>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="s" id="certs">
+  <div class="s-head"><span class="s-num">09 · EXECUTION</span><h2>Certifications</h2></div>
+  <p>Get one or two certifications, chosen to close a gap. Projects carry more weight with hiring managers, but certifications help you pass résumé filters.</p>
+  <div class="cols-3">
+    <div class="card clay feature"><span class="tag">Required · week 8</span><h4>CKA, Certified Kubernetes Administrator</h4><p>Closes your biggest gap. It's hands-on and widely recognized for platform roles.</p></div>
+    <div class="card"><span class="tag" style="color:var(--muted)">Optional · after P4</span><h4>AWS Certified Machine Learning Engineer – Associate</h4><p>Useful if you target AWS-heavy companies or roles that touch SageMaker.</p></div>
+    <div class="card"><span class="tag" style="color:var(--muted)">Optional</span><h4>NVIDIA AI Infrastructure and Operations (associate)</h4><p>A signal for GPU-focused infrastructure roles. Take it only if job postings you want mention it.</p></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="s page" id="interviews">
+  <div class="s-head"><span class="s-num">10 · REFERENCE</span><h2>Interview preparation</h2></div>
+  <p>AI infrastructure interviews combine Kubernetes depth with system design for inference. Practice answering each of these out loud, drawing the architecture as you go.</p>
+  <div class="table-wrap">
+    <table class="tbl-min">
+      <thead><tr><th>Question</th><th>What a strong answer covers</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Design an LLM platform for 50 internal teams.</strong></td><td>Gateway, keys and budgets per team, routing between hosted and self-hosted models, observability, cost showback, data privacy</td></tr>
+        <tr><td><strong>A vLLM pod takes 6 minutes to become ready. Fix it.</strong></td><td>Image size, weight download vs. local cache, pre-pulled images, a warm pool, readiness vs. startup probes</td></tr>
+        <tr><td><strong>GPU utilization is 15% but the bill is high.</strong></td><td>DCGM metrics, batching, right-sizing, MIG and time-slicing, consolidation, scale to zero, spot instances</td></tr>
+        <tr><td><strong>Should we self-host or use an API?</strong></td><td>Traffic volume, cost-per-token break-even, latency, data residency, engineering effort, model quality</td></tr>
+        <tr><td><strong>A spot GPU gets interrupted mid-request.</strong></td><td>The two-minute notice, draining, retries at the gateway, an on-demand fallback pool, PodDisruptionBudgets</td></tr>
+        <tr><td><strong>How do you roll out a new model version safely?</strong></td><td>Eval gates, shadow traffic, canary by weight at the gateway, rollback, GitOps</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="s" id="checklist">
+  <div class="s-head"><span class="s-num">11 · REFERENCE</span><h2>Top 1% checklist</h2></div>
+  <p>By week 26, check each of these honestly. Every item is something most candidates for these roles can't claim.</p>
+  <ul class="checks">
+    <li>I run an AI system in production at my company, and people there know me for it.</li>
+    <li>I can calculate VRAM needs and cost per 1M tokens on a whiteboard.</li>
+    <li>I have served an open model on Kubernetes GPUs with autoscaling, and I measured cold start.</li>
+    <li>I have published benchmarks with my own numbers and a reproducible repo.</li>
+    <li>I can explain when self-hosting is cheaper than an API, and when it isn't.</li>
+    <li>My RAG project has evals in CI that have caught at least one regression.</li>
+    <li>I have a written threat model for an LLM application.</li>
+    <li>I hold the CKA.</li>
+    <li>I have published 5 or more posts, each with a measured result.</li>
+    <li>I have contributed at least one issue, docs fix or pull request to vLLM, LiteLLM, KEDA, Karpenter or a similar project.</li>
+  </ul>
+</section>
+
+<!-- 12 -->
+<section class="s" id="resources">
+  <div class="s-head"><span class="s-num">12 · REFERENCE</span><h2>Resources</h2></div>
+  <div class="table-wrap res">
+    <table class="tbl-min">
+      <thead><tr><th>Phase</th><th>Resource</th><th>Use it for</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip clay">P1</span></td><td><a href="https://automatetheboringstuff.com" target="_blank" rel="noopener">Automate the Boring Stuff with Python</a></td><td>Python basics, free online</td></tr>
+        <tr><td><span class="chip clay">P1</span></td><td><a href="https://fastapi.tiangolo.com/tutorial/" target="_blank" rel="noopener">FastAPI tutorial</a></td><td>Building APIs</td></tr>
+        <tr><td><span class="chip clay">P1</span></td><td><a href="https://huggingface.co/learn/llm-course" target="_blank" rel="noopener">Hugging Face LLM course</a></td><td>Tokens, transformers, models</td></tr>
+        <tr><td><span class="chip clay">P1</span></td><td><em>AI Engineering</em> by Chip Huyen (O'Reilly)</td><td>The best single book on building with LLMs</td></tr>
+        <tr><td><span class="chip sky">P2</span></td><td><a href="https://kubernetes.io/docs/home/" target="_blank" rel="noopener">Kubernetes documentation</a> and <a href="https://killercoda.com" target="_blank" rel="noopener">Killercoda</a></td><td>CKA study and free practice labs</td></tr>
+        <tr><td><span class="chip sage">P3</span></td><td><a href="https://docs.litellm.ai" target="_blank" rel="noopener">LiteLLM docs</a></td><td>Gateway, proxy config, virtual keys</td></tr>
+        <tr><td><span class="chip sage">P3</span></td><td><a href="https://langfuse.com/docs" target="_blank" rel="noopener">Langfuse docs</a></td><td>LLM tracing and cost tracking</td></tr>
+        <tr><td><span class="chip sand">P4</span></td><td><a href="https://docs.vllm.ai" target="_blank" rel="noopener">vLLM docs</a></td><td>Serving, metrics, benchmarks</td></tr>
+        <tr><td><span class="chip sand">P4</span></td><td><a href="https://awslabs.github.io/ai-on-eks/" target="_blank" rel="noopener">AI on EKS (AWS Labs)</a></td><td>Reference Terraform for GPU EKS</td></tr>
+        <tr><td><span class="chip sand">P4</span></td><td><a href="https://karpenter.sh/docs/" target="_blank" rel="noopener">Karpenter docs</a> and <a href="https://keda.sh/docs/" target="_blank" rel="noopener">KEDA docs</a></td><td>GPU node pools and autoscaling</td></tr>
+        <tr><td><span class="chip sand">P4</span></td><td><a href="https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html" target="_blank" rel="noopener">NVIDIA GPU Operator</a></td><td>Drivers, device plugin, DCGM</td></tr>
+        <tr><td><span class="chip sky">P5</span></td><td><a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener">OWASP Top 10 for LLM Applications</a></td><td>Threat modelling</td></tr>
+        <tr><td><span class="chip">P6</span></td><td><a href="https://kserve.github.io/website/" target="_blank" rel="noopener">KServe</a></td><td>The next serving layer to learn</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <footer class="end">
+    <span>DevOps to AI Infrastructure · 26-week plan</span>
+    <span>November 2026 · MIT licensed · review after each phase</span>
+  </footer>
+</section>
+
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
+<script>
+(function () {
+  /* ---------- Hand-drawn diagrams (rough.js) ---------- */
+  var W = 26.5, X0 = 40;
+  function wx(week) { return X0 + week * W; }
+
+  var DIAGRAMS = {
+    lanes: { w: 760, h: 310,
+      nodes: [
+        { id: 'you', x: 20, y: 120, w: 150, h: 72, tone: 'plain', label: 'You\nDevOps · 3 yrs · AWS' },
+        { id: 'infra', x: 300, y: 20, w: 220, h: 72, tone: 'accent', label: 'AI Infrastructure\nprimary lane' },
+        { id: 'llm', x: 300, y: 120, w: 220, h: 72, tone: 'sky', label: 'LLMOps\nsecond skill' },
+        { id: 'ml', x: 300, y: 220, w: 220, h: 72, tone: 'plain', dash: true, label: 'MLOps\nawareness only' },
+        { id: 'goal', x: 598, y: 95, w: 145, h: 122, tone: 'sage', label: 'AI Platform\nEngineer\nmonths 9–12' }
+      ],
+      edges: [
+        { from: 'you', to: 'infra', label: 'K8s · AWS · IaC' },
+        { from: 'you', to: 'llm' },
+        { from: 'you', to: 'ml', dash: true },
+        { from: 'infra', to: 'goal' },
+        { from: 'llm', to: 'goal' },
+        { from: 'ml', to: 'goal', dash: true }
+      ] },
+
+    stack: { w: 760, h: 370,
+      nodes: [
+        { id: 'a', x: 20, y: 20, w: 560, h: 56, tone: 'plain', label: 'Applications\nRAG · agents · chat assistants · internal tools' },
+        { id: 'g', x: 20, y: 88, w: 560, h: 56, tone: 'sage', label: 'Gateway & routing\nLiteLLM · virtual keys · budgets · fallbacks' },
+        { id: 's', x: 20, y: 156, w: 560, h: 56, tone: 'accent', label: 'Model serving\nvLLM · Triton · KServe · Ray Serve' },
+        { id: 'o', x: 20, y: 224, w: 560, h: 56, tone: 'sky', label: 'Orchestration\nKubernetes · GPU Operator · Karpenter · KEDA' },
+        { id: 'c', x: 20, y: 292, w: 560, h: 56, tone: 'sand', label: 'Compute\nNVIDIA GPUs (A10G · L4 · L40S · H100) · VRAM · spot' },
+        { id: 'obs', x: 604, y: 20, w: 140, h: 328, tone: 'plain', dash: true, label: 'Observability\n& FinOps\n \nPrometheus\nDCGM\nLangfuse\ncost per team' }
+      ],
+      edges: [] },
+
+    gateway: { w: 760, h: 372,
+      nodes: [
+        { id: 't1', x: 20, y: 30, w: 150, h: 58, tone: 'plain', label: 'Support bot\ncustomer chat' },
+        { id: 't2', x: 20, y: 122, w: 150, h: 58, tone: 'plain', label: 'Dev tools\nPR review bot' },
+        { id: 't3', x: 20, y: 214, w: 150, h: 58, tone: 'plain', label: 'Data team\nreport summaries' },
+        { id: 'gw', x: 268, y: 92, w: 214, h: 118, tone: 'accent', label: 'LLM Gateway\nLiteLLM on EKS\nkeys · budgets · fallbacks' },
+        { id: 'p1', x: 580, y: 30, w: 160, h: 58, tone: 'plain', label: 'OpenAI\nhosted API' },
+        { id: 'p2', x: 580, y: 122, w: 160, h: 58, tone: 'plain', label: 'Bedrock\nClaude models' },
+        { id: 'p3', x: 580, y: 214, w: 160, h: 58, tone: 'sky', dash: true, label: 'Self-hosted vLLM\nadded in Phase 4' },
+        { id: 'pg', x: 190, y: 298, w: 124, h: 60, tone: 'sand', shape: 'db', label: 'Postgres\nspend + keys' },
+        { id: 'rd', x: 332, y: 298, w: 124, h: 60, tone: 'sand', shape: 'db', label: 'Redis\nrate limits' },
+        { id: 'lf', x: 474, y: 298, w: 124, h: 60, tone: 'sage', label: 'Langfuse\ntraces' },
+        { id: 'gf', x: 616, y: 298, w: 124, h: 60, tone: 'sage', label: 'Grafana\ncost / team' }
+      ],
+      edges: [
+        { from: 't1', to: 'gw' },
+        { from: 't2', to: 'gw', label: 'team key' },
+        { from: 't3', to: 'gw' },
+        { from: 'gw', to: 'p1' },
+        { from: 'gw', to: 'p2', label: 'fallback' },
+        { from: 'gw', to: 'p3', dash: true },
+        { pts: [[330, 210], [252, 298]], dash: true },
+        { pts: [[360, 210], [394, 298]], dash: true },
+        { pts: [[400, 210], [536, 298]], dash: true },
+        { pts: [[440, 210], [678, 298]], dash: true }
+      ] },
+
+    serving: { w: 760, h: 390,
+      nodes: [
+        { id: 'cl', kind: 'group', x: 368, y: 14, w: 378, h: 268, tone: 'sand', label: 'EKS · GPU NodePool · Karpenter (spot g5 / g6)' },
+        { id: 'client', x: 20, y: 64, w: 140, h: 66, tone: 'plain', label: 'Client\nvia LLM gateway' },
+        { id: 'ing', x: 198, y: 64, w: 130, h: 66, tone: 'plain', label: 'Ingress\nALB' },
+        { id: 'p1', x: 390, y: 56, w: 158, h: 82, tone: 'accent', label: 'vLLM pod\n1× A10G 24 GB\nQwen2.5-7B AWQ' },
+        { id: 'p2', x: 568, y: 56, w: 158, h: 82, tone: 'accent', dash: true, label: 'vLLM pod #2\nadded by KEDA' },
+        { id: 'cache', x: 390, y: 182, w: 158, h: 76, tone: 'sand', shape: 'db', label: 'Model cache\nS3 → local disk' },
+        { id: 'dcgm', x: 568, y: 182, w: 158, h: 76, tone: 'plain', label: 'DCGM exporter\nGPU util · VRAM' },
+        { id: 'keda', x: 170, y: 312, w: 140, h: 62, tone: 'sky', label: 'KEDA\nautoscaler' },
+        { id: 'prom', x: 400, y: 312, w: 150, h: 62, tone: 'sage', label: 'Prometheus\nvLLM + GPU metrics' },
+        { id: 'graf', x: 600, y: 312, w: 140, h: 62, tone: 'sage', label: 'Grafana\nTTFT · tok/s · $' }
+      ],
+      edges: [
+        { from: 'client', to: 'ing' },
+        { from: 'ing', to: 'p1' },
+        { from: 'cache', to: 'p1', label: 'weights' },
+        { pts: [[475, 282], [475, 312]] },
+        { from: 'prom', to: 'keda', label: 'queue depth' },
+        { pts: [[240, 312], [240, 232], [368, 232]], label: 'scale pods' },
+        { from: 'prom', to: 'graf' }
+      ] },
+
+    timeline: { w: 760, h: 340,
+      nodes: [
+        { id: 'b1', x: wx(0), y: 18, w: 4 * W, h: 34, tone: 'accent', label: '' },
+        { id: 'b2', x: wx(4), y: 60, w: 4 * W, h: 34, tone: 'sky', label: '' },
+        { id: 'b3', x: wx(8), y: 102, w: 4 * W, h: 34, tone: 'sage', label: '' },
+        { id: 'b4', x: wx(12), y: 144, w: 6 * W, h: 34, tone: 'sand', hachure: true, label: '' },
+        { id: 'b5', x: wx(18), y: 186, w: 4 * W, h: 34, tone: 'sky', label: '' },
+        { id: 'b6', x: wx(22), y: 228, w: 4 * W, h: 34, tone: 'plain', label: '' }
+      ],
+      lines: [
+        { p: [X0 - 10, 282, wx(26) + 10, 282], c: 'ink', sw: 1.6 },
+        { p: [wx(8), 24, wx(8), 282], c: 'clay', dash: true },
+        { p: [wx(12), 66, wx(12), 282], c: 'clay', dash: true },
+        { p: [wx(18), 108, wx(18), 282], c: 'clay', dash: true },
+        { p: [wx(26), 150, wx(26), 282], c: 'clay', dash: true }
+      ],
+      dots: [wx(8), wx(12), wx(18), wx(26)].map(function (x) { return { x: x, y: 282 }; }),
+      texts: [
+        { x: wx(4) + 10, y: 41, t: 'P1 · Python + LLM basics', size: 16, weight: 700 },
+        { x: wx(8) + 10, y: 83, t: 'P2 · Kubernetes + CKA', size: 16, weight: 700 },
+        { x: wx(12) + 10, y: 125, t: 'P3 · LLM gateway at work', size: 16, weight: 700 },
+        { x: wx(18) + 10, y: 167, t: 'P4 · GPU serving (flagship)', size: 16, weight: 700 },
+        { x: wx(22) + 10, y: 209, t: 'P5 · RAG + evals', size: 16, weight: 700 },
+        { x: wx(22) - 10, y: 251, t: 'P6 · Platform + market', size: 16, weight: 700, anchor: 'end' },
+        { x: wx(0.5), y: 302, t: 'W1', size: 13, anchor: 'middle', c: 'muted' },
+        { x: wx(4.5), y: 302, t: 'W5', size: 13, anchor: 'middle', c: 'muted' },
+        { x: wx(8.5), y: 302, t: 'W9', size: 13, anchor: 'middle', c: 'muted' },
+        { x: wx(12.5), y: 302, t: 'W13', size: 13, anchor: 'middle', c: 'muted' },
+        { x: wx(18.5), y: 302, t: 'W19', size: 13, anchor: 'middle', c: 'muted' },
+        { x: wx(22.5), y: 302, t: 'W23', size: 13, anchor: 'middle', c: 'muted' },
+        { x: wx(8), y: 326, t: 'CKA', size: 14, anchor: 'middle', c: 'clay', weight: 700 },
+        { x: wx(12), y: 326, t: 'Gateway demo', size: 14, anchor: 'middle', c: 'clay', weight: 700 },
+        { x: wx(18), y: 326, t: 'Flagship post', size: 14, anchor: 'middle', c: 'clay', weight: 700 },
+        { x: wx(26) - 6, y: 326, t: 'Apply', size: 14, anchor: 'end', c: 'clay', weight: 700 }
+      ],
+      edges: [] }
+  };
+
+  var TONES = {
+    accent: ['clay-fill', 'clay'], sky: ['sky-fill', 'sky'], sage: ['sage-fill', 'sage'],
+    sand: ['sand-fill', 'sand'], plain: ['plain-fill', 'ink-2']
+  };
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function palette() {
+    var usePrint = window.matchMedia && window.matchMedia('print').matches;
+    var src = usePrint ? document.getElementById('lightProbe') : document.documentElement;
+    var cs = getComputedStyle(src);
+    var names = ['paper', 'ink', 'ink-2', 'muted', 'line', 'clay', 'clay-fill', 'sky', 'sky-fill', 'sage', 'sage-fill', 'sand', 'sand-fill', 'plain-fill'];
+    var T = {};
+    names.forEach(function (n) { T[n] = cs.getPropertyValue('--' + n).trim() || '#888'; });
+    if (usePrint) T.paper = '#FFFFFF';
+    return T;
+  }
+
+  function text(svg, x, y, str, o) {
+    var t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', y);
+    t.setAttribute('font-family', 'Kalam, "Segoe Print", "Comic Sans MS", cursive');
+    t.setAttribute('font-size', o.size || 15);
+    t.setAttribute('font-weight', o.weight || 400);
+    t.setAttribute('fill', o.fill);
+    t.setAttribute('text-anchor', o.anchor || 'start');
+    t.textContent = str;
+    svg.appendChild(t);
+    return t;
+  }
+
+  function side(n, s) {
+    if (s === 'l') return [n.x, n.y + n.h / 2];
+    if (s === 'r') return [n.x + n.w, n.y + n.h / 2];
+    if (s === 't') return [n.x + n.w / 2, n.y];
+    return [n.x + n.w / 2, n.y + n.h];
+  }
+  function autoSides(a, b) {
+    if (b.x >= a.x + a.w) return ['r', 'l'];
+    if (b.x + b.w <= a.x) return ['l', 'r'];
+    if (b.y >= a.y + a.h) return ['b', 't'];
+    return ['t', 'b'];
+  }
+
+  function draw(svg, spec, T) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    svg.setAttribute('viewBox', '0 0 ' + spec.w + ' ' + spec.h);
+    var rc = rough.svg(svg);
+    var seed = 11;
+    var byId = {};
+    var base = { roughness: 1.1, bowing: 1.1, strokeWidth: 1.6 };
+    function opt(extra) { var o = {}; for (var k in base) o[k] = base[k]; for (var j in extra) o[j] = extra[j]; o.seed = seed++; return o; }
+
+    (spec.lines || []).forEach(function (l) {
+      var o = opt({ stroke: T[l.c || 'muted'], strokeWidth: l.sw || 1.3, roughness: 0.8 });
+      if (l.dash) o.strokeLineDash = [6, 6];
+      svg.appendChild(rc.line(l.p[0], l.p[1], l.p[2], l.p[3], o));
+    });
+
+    spec.nodes.forEach(function (n) {
+      byId[n.id] = n;
+      var tone = TONES[n.tone || 'plain'];
+      var fill = T[tone[0]], stroke = T[tone[1]];
+      if (n.kind === 'group') {
+        var g = opt({ stroke: stroke, strokeWidth: 1.5, strokeLineDash: [9, 7], roughness: 0.9 });
+        svg.appendChild(rc.rectangle(n.x, n.y, n.w, n.h, g));
+        text(svg, n.x + 14, n.y + 24, n.label, { size: 14, weight: 700, fill: stroke });
+        return;
+      }
+      var o = opt({
+        stroke: stroke, fill: fill,
+        fillStyle: n.hachure ? 'hachure' : 'solid',
+        hachureGap: 6, fillWeight: 1.4, hachureAngle: -41,
+        strokeWidth: n.tone === 'accent' ? 2.2 : 1.6
+      });
+      if (n.dash) o.strokeLineDash = [8, 6];
+      if (n.shape === 'db') {
+        svg.appendChild(rc.rectangle(n.x, n.y + 8, n.w, n.h - 8, o));
+        var e = opt({ stroke: stroke, fill: fill, fillStyle: 'solid', strokeWidth: 1.6 });
+        svg.appendChild(rc.ellipse(n.x + n.w / 2, n.y + 9, n.w, 18, e));
+      } else {
+        svg.appendChild(rc.rectangle(n.x, n.y, n.w, n.h, o));
+      }
+      if (!n.label) return;
+      var lines = n.label.split('\n');
+      var lh = 18, first = 20;
+      var total = first + (lines.length - 1) * lh;
+      var cy = n.y + n.h / 2 + (n.shape === 'db' ? 5 : 0);
+      var y = cy - total / 2 + 15;
+      lines.forEach(function (ln, i) {
+        text(svg, n.x + n.w / 2, y, ln, {
+          size: i === 0 ? 17 : 13.5, weight: i === 0 ? 700 : 400,
+          fill: i === 0 ? T.ink : T['ink-2'], anchor: 'middle'
+        });
+        y += i === 0 ? first + 1 : lh;
+      });
+    });
+
+    (spec.dots || []).forEach(function (d) {
+      svg.appendChild(rc.circle(d.x, d.y, 11, opt({ stroke: T.clay, fill: T.clay, fillStyle: 'solid', strokeWidth: 1.4 })));
+    });
+
+    (spec.edges || []).forEach(function (e) {
+      var pts;
+      if (e.pts) { pts = e.pts; }
+      else {
+        var a = byId[e.from], b = byId[e.to];
+        var s = autoSides(a, b);
+        pts = [side(a, e.fs || s[0]), side(b, e.ts || s[1])];
+      }
+      var o = opt({ stroke: T.muted, strokeWidth: 1.6, roughness: 0.9 });
+      if (e.dash) o.strokeLineDash = [7, 6];
+      if (pts.length === 2) svg.appendChild(rc.line(pts[0][0], pts[0][1], pts[1][0], pts[1][1], o));
+      else svg.appendChild(rc.linearPath(pts, o));
+      var p = pts[pts.length - 1], q = pts[pts.length - 2];
+      var ang = Math.atan2(p[1] - q[1], p[0] - q[0]);
+      var head = opt({ stroke: T.muted, strokeWidth: 1.6, roughness: 0.6 });
+      [0.45, -0.45].forEach(function (d) {
+        svg.appendChild(rc.line(p[0], p[1], p[0] - 13 * Math.cos(ang + d), p[1] - 13 * Math.sin(ang + d), head));
+      });
+      if (e.label) {
+        var mi = Math.floor((pts.length - 1) / 2);
+        var m0 = pts[mi], m1 = pts[mi + 1];
+        var mx = (m0[0] + m1[0]) / 2, my = (m0[1] + m1[1]) / 2;
+        var wpx = e.label.length * 7.2 + 12;
+        var r = document.createElementNS(NS, 'rect');
+        r.setAttribute('x', mx - wpx / 2); r.setAttribute('y', my - 11);
+        r.setAttribute('width', wpx); r.setAttribute('height', 20);
+        r.setAttribute('rx', 4); r.setAttribute('fill', T.paper);
+        svg.appendChild(r);
+        text(svg, mx, my + 4, e.label, { size: 13, fill: T.muted, anchor: 'middle' });
+      }
+    });
+
+    (spec.texts || []).forEach(function (t) {
+      text(svg, t.x, t.y, t.t, { size: t.size, weight: t.weight, anchor: t.anchor, fill: T[t.c || 'ink'] });
+    });
+  }
+
+  function renderAll() {
+    if (typeof rough === 'undefined') return;
+    var T = palette();
+    document.querySelectorAll('svg[data-diagram]').forEach(function (svg) {
+      var spec = DIAGRAMS[svg.getAttribute('data-diagram')];
+      if (spec) draw(svg, spec, T);
+    });
+  }
+
+  renderAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderAll);
+  try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderAll);
+    window.matchMedia('print').addEventListener('change', renderAll);
+  } catch (e) {}
+  window.addEventListener('beforeprint', renderAll);
+  window.addEventListener('afterprint', renderAll);
+  new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ---------- Copy buttons ---------- */
+  document.querySelectorAll('.code').forEach(function (block) {
+    var btn = block.querySelector('.copy');
+    var code = block.querySelector('pre code');
+    if (!btn || !code) return;
+    btn.addEventListener('click', function () {
+      var done = function () { btn.textContent = 'Copied'; btn.classList.add('ok'); setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1600); };
+      var fallback = function () {
+        var range = document.createRange(); range.selectNodeContents(code);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        btn.textContent = 'Selected, press Ctrl+C';
+      };
+      try {
+        navigator.clipboard.writeText(code.textContent).then(done, fallback);
+      } catch (e) { fallback(); }
+    });
+  });
+
+  /* ---------- Print ---------- */
+  var inFrame = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  document.getElementById('printBtn').addEventListener('click', function () {
+    if (inFrame) {
+      var note = document.getElementById('printNote');
+      note.hidden = !note.hidden;
+      return;
+    }
+    renderAll();
+    window.print();
+  });
+
+  /* ---------- Mobile contents ---------- */
+  var toggle = document.getElementById('tocToggle');
+  var scrim = document.getElementById('scrim');
+  function setNav(open) {
+    document.body.classList.toggle('nav-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    scrim.hidden = !open;
+  }
+  toggle.addEventListener('click', function () { setNav(!document.body.classList.contains('nav-open')); });
+  scrim.addEventListener('click', function () { setNav(false); });
+  document.querySelectorAll('.toc a').forEach(function (a) { a.addEventListener('click', function () { setNav(false); }); });
+
+  /* ---------- Scrollspy ---------- */
+  var links = {};
+  document.querySelectorAll('.toc a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var current = null;
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          if (current) current.classList.remove('active');
+          current = links[en.target.id];
+          if (current) current.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-15% 0px -75% 0px' });
+    document.querySelectorAll('section.s[id]').forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
+
+</body>
+</html>

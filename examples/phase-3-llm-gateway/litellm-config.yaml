@@ -1,0 +1,25 @@
+model_list:
+  - model_name: chat-default              # what apps ask for
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: chat-default              # same name = fallback / load-balance pool
+    litellm_params:
+      model: bedrock/<model-id-enabled-in-your-account>
+      aws_region_name: us-east-1
+  - model_name: chat-private              # added in Phase 4
+    litellm_params:
+      model: hosted_vllm/Qwen/Qwen2.5-7B-Instruct-AWQ
+      api_base: http://vllm-qwen.inference.svc:8000/v1
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 2
+
+litellm_settings:
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

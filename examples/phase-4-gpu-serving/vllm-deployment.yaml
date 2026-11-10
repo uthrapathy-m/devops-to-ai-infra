@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-qwen
+  namespace: inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: vllm-qwen }
+  template:
+    metadata:
+      labels: { app: vllm-qwen }
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: gpu
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.6.3      # pin the tag you tested
+          args:
+            - --model=Qwen/Qwen2.5-7B-Instruct-AWQ
+            - --max-model-len=8192
+            - --gpu-memory-utilization=0.90
+          ports:
+            - containerPort: 8000
+          resources:
+            requests: { cpu: "3", memory: 12Gi }
+            limits:   { memory: 13Gi, nvidia.com/gpu: 1 }
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          volumeMounts:
+            - { name: hf-cache, mountPath: /root/.cache/huggingface }
+            - { name: shm, mountPath: /dev/shm }
+      volumes:
+        - name: hf-cache
+          emptyDir: {}                       # upgrade: pre-load from S3 in an init container
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: 2Gi }

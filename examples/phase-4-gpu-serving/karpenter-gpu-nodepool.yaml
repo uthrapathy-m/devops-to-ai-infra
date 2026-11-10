@@ -1,0 +1,29 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: gpu
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: gpu
+      requirements:
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["g5", "g6"]          # A10G / L4, 24 GB each
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["xlarge", "2xlarge"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]  # spot first; on-demand as fallback
+      taints:
+        - key: nvidia.com/gpu
+          effect: NoSchedule             # only GPU workloads land here
+  limits:
+    nvidia.com/gpu: 2                    # a hard cap on GPUs is a hard cap on spend
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 5m
